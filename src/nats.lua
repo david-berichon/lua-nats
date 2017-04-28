@@ -36,6 +36,12 @@ local defaults = {
     path        = nil,
 }
 
+-- ### Create a properly formatted inbox subject.
+
+local function create_inbox()
+    uuid.seed()
+    return '_INBOX.' .. uuid()
+end
 
 -- ### Local methods ###
 
@@ -337,9 +343,16 @@ function command.pong(client)
     request.raw(client, 'PONG\r\n')
 end
 
+function command.request(client, subject, payload, callback)
+    local inbox = create_inbox()
+    local unique_id = client:subscribe(inbox, callback)
+    client:publish(subject, payload)
+    return unique_id
+end
+
 function command.subscribe(client, subject, callback)
     uuid.seed()
-    unique_id = uuid()
+    local unique_id = uuid()
     request.raw(client, 'SUB '..subject..' '..unique_id..'\r\n')
     client.subscriptions[unique_id] = callback
 
@@ -382,6 +395,7 @@ nats.commands = {
     connect     = command.connect,
     ping        = command.ping,
     pong        = command.pong,
+    request     = command.request,
     subscribe   = command.subscribe,
     unsubscribe = command.unsubscribe,
     publish     = command.publish,

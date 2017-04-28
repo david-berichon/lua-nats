@@ -109,4 +109,27 @@ context('NATS commands', function()
 
         assert_equal(client.network.lwrite:sub(1,3), 'PUB')
     end)
+
+    test('* client:request', function()
+        local init_message = 'init message'
+        local reply_message = 'reply message'
+        local subscribe_id = client:subscribe('foo', function(message)
+          print('callback foo')
+          assert_equal(message, init_message)
+          return reply_message
+        end)
+
+        client:request('foo', init_message, function(message)
+            assert_equal(message, reply_message)
+        end)
+
+        require "socket"
+
+        socket.sleep(2)
+
+        print("pp")
+        print("pp")
+        print("pp")
+        print("pp")
+    end)
 end)
