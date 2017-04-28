@@ -143,13 +143,16 @@ function response.read(client)
 
     -- MSG
     elseif slices[1] == 'MSG' then
-        local length = slices[4]
-
         data.action    = 'MSG'
         data.subject   = slices[2]
         data.unique_id = slices[3]
         -- ask for line ending chars and remove them
-        data.content   = client.network.read(client, length+2):sub(1, -3)
+        if #slices == 4 then
+            data.content   = client.network.read(client,  slices[4]+2):sub(1, -3)
+        else
+            data.reply     = slices[4]
+            data.content   = client.network.read(client,  slices[5]+2):sub(1, -3)
+        end
 
     -- INFO
     elseif slices[1] == 'INFO' then
@@ -346,8 +349,8 @@ end
 function command.request(client, subject, payload, callback)
     local inbox = create_inbox()
     local unique_id = client:subscribe(inbox, callback)
-    client:publish(subject, payload)
-    return unique_id
+    client:publish(subject, payload, inbox)
+    return unique_id, inbox
 end
 
 function command.subscribe(client, subject, callback)
@@ -364,9 +367,14 @@ function command.unsubscribe(client, unique_id)
     client.subscriptions[unique_id] = nil
 end
 
-function command.publish(client, subject, payload)
+function command.publish(client, subject, payload, reply)
+    if reply ~= nil then
+        reply = ' '..reply
+    else
+        reply = ''
+    end
     request.raw(client, {
-        'PUB '..subject..' '..#payload..'\r\n',
+        'PUB '..subject..reply..' '..#payload..'\r\n',
         payload..'\r\n',
     })
 end
@@ -383,7 +391,7 @@ function command.wait(client, quantity)
 
         elseif data.action == 'MSG' then
             count = count + 1
-            client.subscriptions[data.unique_id](data.content)
+            client.subscriptions[data.unique_id](data.content, data.reply)
         end
     until quantity > 0 and count >= quantity
 end
