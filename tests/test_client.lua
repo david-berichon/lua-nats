@@ -118,7 +118,6 @@ context('NATS commands', function()
         client:subscribe('foo', function(message, reply)
           equal_init_message = message == init_message
           client:publish(reply, reply_message)
-          return reply_message
         end)
 
         client:request('foo', init_message, function(message)
