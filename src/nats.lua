@@ -39,7 +39,6 @@ local defaults = {
 -- ### Create a properly formatted inbox subject.
 
 local function create_inbox()
-    uuid.seed()
     return '_INBOX.' .. uuid()
 end
 
@@ -93,7 +92,7 @@ local function create_client(client_proto, client_socket, commands)
     client.requests = {
         multibulk = request.raw,
     }
-
+    uuid.seed()
     return client
 end
 
@@ -357,7 +356,6 @@ function command.request(client, subject, payload, callback)
 end
 
 function command.subscribe(client, subject, callback)
-    uuid.seed()
     local unique_id = uuid()
     request.raw(client, 'SUB '..subject..' '..unique_id..'\r\n')
     client.subscriptions[unique_id] = callback
